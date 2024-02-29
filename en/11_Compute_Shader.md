@@ -173,7 +173,7 @@ In the graphics samples we have used different pipeline stages to load shaders a
 Loading compute shaders in our application is the same as loading any other other shader. The only real difference is that we'll need to use the `VK_SHADER_STAGE_COMPUTE_BIT` mentioned above.
 
 ```c++
-auto computeShaderCode = readFile("shaders/compute.spv");
+auto computeShaderCode = readFile("../shaders/compute.spv");
 
 VkShaderModule computeShaderModule = createShaderModule(computeShaderCode);
 

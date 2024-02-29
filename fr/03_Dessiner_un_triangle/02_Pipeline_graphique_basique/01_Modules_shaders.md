@@ -295,8 +295,8 @@ Appelons maintenant cette fonction depuis `createGraphicsPipeline` pour charger 
 
 ```c++
 void createGraphicsPipeline() {
-    auto vertShaderCode = readFile("shaders/vert.spv");
-    auto fragShaderCode = readFile("shaders/frag.spv");
+    auto vertShaderCode = readFile("../shaders/vert.spv");
+    auto fragShaderCode = readFile("../shaders/frag.spv");
 }
 ```
 

@@ -325,8 +325,8 @@ of the two shaders:
 
 ```c++
 void createGraphicsPipeline() {
-    auto vertShaderCode = readFile("shaders/vert.spv");
-    auto fragShaderCode = readFile("shaders/frag.spv");
+    auto vertShaderCode = readFile("../shaders/vert.spv");
+    auto fragShaderCode = readFile("../shaders/frag.spv");
 }
 ```
 
@@ -388,8 +388,8 @@ Shader modules are just a thin wrapper around the shader bytecode that we've pre
 
 ```c++
 void createGraphicsPipeline() {
-    auto vertShaderCode = readFile("shaders/vert.spv");
-    auto fragShaderCode = readFile("shaders/frag.spv");
+    auto vertShaderCode = readFile("../shaders/vert.spv");
+    auto fragShaderCode = readFile("../shaders/frag.spv");
 
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
