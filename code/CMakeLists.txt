@@ -3,13 +3,12 @@ cmake_minimum_required(VERSION 3.8)
 project(VulkanTutorial)
 set(CMAKE_CXX_STANDARD 17) # this does nothing for MSVC, use target_compile_options below
 
-include_directories(${CMAKE_SOURCE_DIR}/includes)
+include_directories(${CMAKE_SOURCE_DIR}/includes
+  ${CMAKE_SOURCE_DIR}/includes/tinyobjloader
+  ${CMAKE_SOURCE_DIR}/includedir
+)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/includes/glm)
-
-add_library(tinyobjloader ${CMAKE_SOURCE_DIR}/includes/tinyobjloader/tiny_obj_loader.h)
-add_library(tinyobjloader::tinyobjloader ALIAS tinyobjloader)
-set_target_properties(tinyobjloader PROPERTIES LINKER_LANGUAGE CXX)
 
 # include(cmake/glfw3Config.cmake)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
@@ -21,21 +20,6 @@ find_package(glm REQUIRED)
 message(STATUS "glm included at ${GLM_INCLUDE_DIR}")
 find_package(Vulkan REQUIRED)
 message(STATUS "Vulkan included at ${GLM_INCLUDE_DIR}")
-
-# find_package (tinyobjloader REQUIRED)
-# message(STATUS "tinyobjloader included at ${tinyobjloader_INCLUDE_DIR}")
-
-# find_package (PkgConfig)
-# pkg_get_variable (STB_INCLUDEDIR stb includedir)
-# if (NOT STB_INCLUDEDIR)
-# unset (STB_INCLUDEDIR)
-# find_path (STB_INCLUDEDIR stb_image.h PATH_SUFFIXES stb)
-# endif ()
-if(NOT STB_INCLUDEDIR)
-  message("================================")
-
-  # message (FATAL_ERROR "stb_image.h not found")
-endif()
 
 add_executable(glslang::validator IMPORTED)
 find_program(GLSLANG_VALIDATOR "glslangValidator" HINTS $ENV{VULKAN_SDK}/bin REQUIRED)
@@ -193,19 +177,25 @@ add_chapter(28_model_loading
   SHADER 27_shader_depth
   MODELS ../resources/viking_room.obj
   TEXTURES ../resources/viking_room.png
-  LIBS glm::glm tinyobjloader::tinyobjloader)
+
+  # LIBS glm::glm tinyobjloader::tinyobjloader)
+  LIBS glm::glm)
 
 add_chapter(29_mipmapping
   SHADER 27_shader_depth
   MODELS ../resources/viking_room.obj
   TEXTURES ../resources/viking_room.png
-  LIBS glm::glm tinyobjloader::tinyobjloader)
+
+  # LIBS glm::glm tinyobjloader::tinyobjloader)
+  LIBS glm::glm)
 
 add_chapter(30_multisampling
   SHADER 27_shader_depth
   MODELS ../resources/viking_room.obj
   TEXTURES ../resources/viking_room.png
-  LIBS glm::glm tinyobjloader::tinyobjloader)
+
+  # LIBS glm::glm tinyobjloader::tinyobjloader)
+  LIBS glm::glm)
 
 add_chapter(31_compute_shader
   SHADER 31_shader_compute

@@ -312,7 +312,7 @@ class MaterialStreamReader : public MaterialReader {
 /// 'triangulate' is optional, and used whether triangulate polygon face in .obj
 /// or not.
 bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
-             std::vector<material_t> *materials, std::string *err,
+             std::vector<material_t> *materials, std::string *warn, std::string *err,
              const char *filename, const char *mtl_basedir = NULL,
              bool triangulate = true);
 
@@ -332,7 +332,7 @@ bool LoadObjWithCallback(std::istream &inStream, const callback_t &callback,
 /// Returns true when loading .obj become success.
 /// Returns warning and error message into `err`
 bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
-             std::vector<material_t> *materials, std::string *err,
+             std::vector<material_t> *materials, std::string *warn, std::string *err,
              std::istream *inStream, MaterialReader *readMatFn = NULL,
              bool triangulate = true);
 
@@ -1393,7 +1393,7 @@ bool MaterialStreamReader::operator()(const std::string &matId,
 }
 
 bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
-             std::vector<material_t> *materials, std::string *err,
+             std::vector<material_t> *materials, std::string *warn, std::string *err,
              const char *filename, const char *mtl_basedir, bool trianglulate) {
   attrib->vertices.clear();
   attrib->normals.clear();
@@ -1417,12 +1417,13 @@ bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
   }
   MaterialFileReader matFileReader(baseDir);
 
-  return LoadObj(attrib, shapes, materials, err, &ifs, &matFileReader,
+
+  return LoadObj(attrib, shapes, materials, warn, err, &ifs, &matFileReader,
                  trianglulate);
 }
 
 bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
-             std::vector<material_t> *materials, std::string *err,
+             std::vector<material_t> *materials, std::string *warn, std::string *err,
              std::istream *inStream, MaterialReader *readMatFn /*= NULL*/,
              bool triangulate) {
   std::stringstream errss;
