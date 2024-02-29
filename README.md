@@ -1,5 +1,5 @@
 VSCode CMake
-====
+===============
 当前学习环境已搭建好，下载之后直接在VScode中直接CMAKE便可进行开发调试
 
 ![alt text](image.png)
