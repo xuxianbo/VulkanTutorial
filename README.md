@@ -1,5 +1,12 @@
+VSCode CMake
+====
+当前学习环境已搭建好，下载之后直接在VScode中直接CMAKE便可进行开发调试
+
+![alt text](image.png)
+
 Vulkan tutorial
 ===============
+
 
 This repository hosts the contents of [vulkan-tutorial.com](https://vulkan-tutorial.com).
 The website itself is based on [daux.io](https://github.com/dauxio/daux.io),
