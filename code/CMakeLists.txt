@@ -26,6 +26,7 @@ find_program(GLSLANG_VALIDATOR "glslangValidator" HINTS $ENV{VULKAN_SDK}/bin REQ
 set_property(TARGET glslang::validator PROPERTY IMPORTED_LOCATION "${GLSLANG_VALIDATOR}")
 
 function(add_shaders_target TARGET)
+
   cmake_parse_arguments("SHADER" "" "CHAPTER_NAME" "SOURCES" ${ARGN})
   set(SHADERS_DIR ${SHADER_CHAPTER_NAME}/shaders)
   add_custom_command(
@@ -55,6 +56,8 @@ function(add_shaders_target TARGET)
 endfunction()
 
 function(add_chapter CHAPTER_NAME)
+  message("====================== ${CHAPTER_NAME} ==================================")
+  
   cmake_parse_arguments(CHAPTER "" "SHADER" "LIBS;TEXTURES;MODELS" ${ARGN})
 
   add_executable(${CHAPTER_NAME} ${CHAPTER_NAME}.cpp)
@@ -67,6 +70,8 @@ function(add_chapter CHAPTER_NAME)
   if(DEFINED CHAPTER_SHADER)
     set(CHAPTER_SHADER_TARGET ${CHAPTER_NAME}_shader)
     file(GLOB SHADER_SOURCES ${CHAPTER_SHADER}.frag ${CHAPTER_SHADER}.vert ${CHAPTER_SHADER}.comp)
+
+    message("${SHADER_SOURCES}")
     add_shaders_target(${CHAPTER_SHADER_TARGET} CHAPTER_NAME ${CHAPTER_NAME} SOURCES ${SHADER_SOURCES})
     add_dependencies(${CHAPTER_NAME} ${CHAPTER_SHADER_TARGET})
   endif()
@@ -174,12 +179,23 @@ add_chapter(27_depth_buffering
   LIBS glm::glm)
 
 add_chapter(28_model_loading
-  SHADER 27_shader_depth
+  SHADER 28_model_loading
+  # SHADER 27_shader_depth
   MODELS ../resources/viking_room.obj
   TEXTURES ../resources/viking_room.png
 
   # LIBS glm::glm tinyobjloader::tinyobjloader)
   LIBS glm::glm)
+
+
+  add_chapter(28_1_pipelines
+  SHADER 28_model_loading
+  MODELS ../resources/viking_room.obj
+  TEXTURES ../resources/viking_room.png
+
+  # LIBS glm::glm tinyobjloader::tinyobjloader)
+  LIBS glm::glm)
+
 
 add_chapter(29_mipmapping
   SHADER 27_shader_depth
