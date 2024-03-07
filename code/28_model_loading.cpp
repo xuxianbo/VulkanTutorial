@@ -1332,6 +1332,7 @@ private:
             scissor.extent = swapChainExtent;
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
+
             // 测试常量  pushConst传入
             pushConstBlock.color = glm::vec3(0.0f, 1.0f, 0.0f);
             vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT,0, sizeof(pushConstBlock), &pushConstBlock);
