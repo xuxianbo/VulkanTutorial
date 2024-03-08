@@ -199,9 +199,11 @@ add_chapter(28_model_loading
 
 add_chapter(29_mipmapping
   SHADER 27_shader_depth
-  MODELS ../resources/viking_room.obj
-  TEXTURES ../resources/viking_room.png
-
+  # MODELS ../resources/viking_room.obj
+  # TEXTURES ../resources/viking_room.png
+  MODELS ../resources/Plane.obj
+  TEXTURES ../resources/Plane.png
+  
   # LIBS glm::glm tinyobjloader::tinyobjloader)
   LIBS glm::glm)
 
