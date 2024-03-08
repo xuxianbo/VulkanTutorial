@@ -82,6 +82,12 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+ // 常量
+struct PushConstBlock
+{
+    glm::vec3 color;
+} pushConstBlock;
+
 struct Vertex {
     glm::vec3 pos;
     glm::vec3 color;
@@ -155,6 +161,23 @@ private:
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
 
+
+    // Queues
+    // Queue代表一个GPU线程，Vulkan设备执行的就是提交到Queues中的工作。物理设备中Queue可能不止一个，每一个Queue都被包含在Queue Families中。
+    // Queue Families是一个有相同功能的Queues的集合，它们的性能水平和对系统资源的访问是相同的，并且在它们之间数据传输工作没有任何成本（同步之外）。
+    // 一个物理设备中可以存在多个Queue Families，不同的Queue Families有不同的特性。相同Queue Families中的Queues的功能相同，并且可以并行运行。
+
+    // 按照Queue的能力，可以将其划分为：
+    // Graphics（图形）
+    // 该系列中的Queues支持图形操作，例如绘制点，线和三角形。
+
+    // Compute（计算）
+    // 该系列中的Queues支持诸如computer shader之类的计算操作。
+
+    // Transfer（传输，拷贝）
+    // 该系列中的Queues支持传输操作，例如复制缓冲区和图像内容。
+
+    // Queue 可以理解为一个“GPU线程”
     VkQueue graphicsQueue;
     VkQueue presentQueue;
 
@@ -715,10 +738,18 @@ private:
         dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
         dynamicState.pDynamicStates = dynamicStates.data();
 
+        VkPushConstantRange pushConstantRange;
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        pushConstantRange.size = sizeof(PushConstBlock);
+        pushConstantRange.offset = 0;
+
+
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
 
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");
@@ -1045,7 +1076,8 @@ private:
     void createVertexBuffer() {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-        // 创建buffer（本地内存）
+        // 创建buffer CPU本地内存 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+        // 注意 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 表示这块存储不需要调用vkFlushMappedMemoryRanges和vkInvalidateMappedMemoryRanges来flush主机写入的数据，就可以使设备可见，对于设备写入的数据也可以直接对主机可见。
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
@@ -1055,13 +1087,13 @@ private:
         vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
             memcpy(data, vertices.data(), (size_t) bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
-
-        // 创建GPU内存
+        // 创建buffer GPU 远端内存 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
 
-        // 将本地内存传送给GPU内存
+        // 将CPU本地内存  拷贝到GPU远端内存
         copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
+        // 拷贝完成之后 进行清理掉CPU本地内存
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
@@ -1300,6 +1332,11 @@ private:
             scissor.extent = swapChainExtent;
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
+
+            // 测试常量  pushConst传入
+            pushConstBlock.color = glm::vec3(0.0f, 1.0f, 0.0f);
+            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT,0, sizeof(pushConstBlock), &pushConstBlock);
+
             VkBuffer vertexBuffers[] = {vertexBuffer};
             VkDeviceSize offsets[] = {0};
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
@@ -1354,6 +1391,7 @@ private:
     }
 
     void drawFrame() {
+        // 也就是渲染结果已经出来了之后将Fence放开
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
@@ -1368,6 +1406,7 @@ private:
 
         updateUniformBuffer(currentFrame);
 
+        // 重新开始Record Command，避免一个正在被执行的Command Buffer还被线程用于Record Command
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
         vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
@@ -1379,6 +1418,7 @@ private:
         VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         submitInfo.waitSemaphoreCount = 1;
+        // pWaitSemaphores 指定了这次Submit需要等待这些Semaphores发出信号之后才可执行
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
 
@@ -1387,6 +1427,7 @@ private:
 
         VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
         submitInfo.signalSemaphoreCount = 1;
+        // pSignalSemaphores 指定了如果该批次完成了Command Buffer命令执行之后，则这些Semaphores发出信号
         submitInfo.pSignalSemaphores = signalSemaphores;
 
         // 命令队列提交绘制命令  参数Fences是进行CPU和GPU同步   
