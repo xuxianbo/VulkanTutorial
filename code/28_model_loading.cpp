@@ -862,26 +862,40 @@ private:
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
+        // 将CPU Buffer（stagingBuffer）绑定到GPU Memory（stagingBufferMemory）内存上
         createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
         void* data;
+        // 将GPU设备内存映射到CPU的 data上
         vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
+            //将读取出来的纹理数据拷贝到 data上
             memcpy(data, pixels, static_cast<size_t>(imageSize));
+        // 数据拷贝完成之后接触GPU和CPU的内存映射关系 此时纹理数据成功传到了GPU的内存buffer上（stagingBufferMemory）
         vkUnmapMemory(device, stagingBufferMemory);
 
         stbi_image_free(pixels);
 
+        // 创建一个Image并将Image 绑定到 GPU设备内存（textureImageMemory）上
         createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 
+        // VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL 只能用作传输命令的目标映像。此布局仅对启用使用位创建的图像的图像子资源有效
         transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            // 将读取到 图片Buffer 转移到 Image上
             copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+
+        // 用于图片拷贝完成同步的 确保图片数据完全转移到Image中
+        // VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL指定允许在着色器中以采样图像、组合图像/采样器或输入附件的形式进行只读访问的布局。VK_IMAGE_USAGE_SAMPLED_BIT此布局仅对启用或 使用位创建的图像的图像子资源有效
         transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
+
+        // 因为Cpu的stagingBuffer 和GPU的stagingBufferMemory是用来临时读取图片的Buffer 并传到Image中的  所以用完之后便可以销毁掉  CPU和GPU上的内存
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
     void createTextureImageView() {
+        // 因为VkImage不能用作显示 而VkImageView是用作显示用的  有了vkImageView便可以将image作为纹理进行使用了（跟Descriptor关联传到shader中使用）
+        // 所以需要通过textureImage来创建对应可以用于显示的textureImageView
         textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
@@ -904,6 +918,7 @@ private:
         samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
         samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
+        // 定义纹理采样时的细节
         if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
             throw std::runtime_error("failed to create texture sampler!");
         }
@@ -945,6 +960,7 @@ private:
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
+        // 根据VkImageCreateInfo参数创建一个Image
         if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
             throw std::runtime_error("failed to create image!");
         }
@@ -956,11 +972,12 @@ private:
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
+        // 为创建出来Image分配内存
         if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
             throw std::runtime_error("failed to allocate image memory!");
         }
 
+        // 将Image和imageMemory进行内存绑定
         vkBindImageMemory(device, image, imageMemory, 0);
     }
 
@@ -999,6 +1016,7 @@ private:
             throw std::invalid_argument("unsupported layout transition!");
         }
 
+        // Vulkan流水线（Pipeline） 阶段内用于内存访问管理和资源状态移动的同步机制
         vkCmdPipelineBarrier(
             commandBuffer,
             sourceStage, destinationStage,
@@ -1082,11 +1100,15 @@ private:
         VkDeviceMemory stagingBufferMemory;
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
-        // 做buffer内存映射
+        // 做buffer内存映射  
+        // 使用vkMapMemory将缓冲区内存映射(mapping the buffer memory)到CPU可访问的内存中完成。
         void* data;
         vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+            // 将顶点数据Copy到缓冲区
             memcpy(data, vertices.data(), (size_t) bufferSize);
+        // 拷贝完成之后接触映射关系（因为顶点数据只在一开始的时候传递一次）
         vkUnmapMemory(device, stagingBufferMemory);
+
         // 创建buffer GPU 远端内存 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
 
@@ -1127,9 +1149,15 @@ private:
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
-
+            // 做uniform Buffer的vkMapMemory将缓冲区内存映射(mapping the buffer memory)到CPU可访问的内存中完成。
             vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
         }
+
+        // Uniform 本质上是全局变量  意思就是其实将属性跟在每一个顶点上，但是  这个属于并不是每一个顶点都不一样二十所有的顶点都公用的
+        // 为了减小顶点buffer大小 所以单独提炼出来便形成了Uniform  这便是Uniform变量存在的意义
+        // 而每一帧的Uniform数据可能会一直变化，所以GPU设备内存与CPU的可访问的内存映射关系会一直存在到程序结束
+
+        // 由于uniform 跟VexterBuffer不一样是全局变量，有可能一直在更新 所以映射关系伴随着整个生命周期 直到程序结束时接触绑定关系
     }
 
     void createDescriptorPool() {

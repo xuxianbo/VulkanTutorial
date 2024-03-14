@@ -1123,6 +1123,16 @@ private:
             viewport.maxDepth = 1.0f;
             vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
+
+            // VkViewport viewport1{};
+            // viewport1.x = swapChainExtent.width/2;
+            // viewport1.y = swapChainExtent.height/2;
+            // viewport1.width = (float) swapChainExtent.width;
+            // viewport1.height = (float) swapChainExtent.height;
+            // viewport1.minDepth = 0.0f;
+            // viewport1.maxDepth = 1.0f;
+            // vkCmdSetViewport(commandBuffer, 0, 1, &viewport1);
+            
             VkRect2D scissor{};
             scissor.offset = {0, 0};
             scissor.extent = swapChainExtent;

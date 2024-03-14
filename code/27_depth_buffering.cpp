@@ -737,7 +737,7 @@ private:
             std::array<VkImageView, 2> attachments = {
                 swapChainImageViews[i],
                 depthImageView
-            };
+            }; 
 
             VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
