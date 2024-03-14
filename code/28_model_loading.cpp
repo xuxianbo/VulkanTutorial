@@ -1061,7 +1061,7 @@ private:
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         // 这里的** usage字段与缓冲区创建过程中使用的 **usage 字段有相同的语意。
         // 图像将会被用作缓冲区拷贝的目标，所以应该设置作为传输目的地。
-        // 我们还希望从着色器中访问图像对我们的mesh进行着色，因此具体的usage还要包括VK_IMAGE_USAGE_SAMPLED_BIT
+        // 我们还希望从着色器中访问图像对我们的mesh进行着色，因此具体的usage还要包括 VK_IMAGE_USAGE_SAMPLED_BIT
         imageInfo.usage = usage;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
