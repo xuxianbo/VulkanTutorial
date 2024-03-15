@@ -2,6 +2,13 @@ VSCode CMake
 ===============
 当前学习环境已搭建好，下载之后直接在VScode中直接CMAKE便可进行开发调试
 
+24 TextureImage
+------
+VkImageTiling 图像内侧的布局方式
+    VK_IMAGE_TILING_OPTIMAL = 0,
+    VK_IMAGE_TILING_LINEAR = 1,
+![alt text](/renderings/TextureMemoryLayout.png)
+
 29 mipmap
 ------
 左边为开启mip map的效果,  右边为未开启mipmap的效果

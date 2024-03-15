@@ -1046,7 +1046,8 @@ private:
         imageInfo.mipLevels = 1;
         imageInfo.arrayLayers = 1;
         imageInfo.format = format; // Vulkan支持多种图像格式，但无论如何我们要在缓冲区中为纹素应用与像素一致的格式，否则拷贝操作会失败
-        // tiling 字段的设定
+        
+        // tiling 字段的设定 图像内侧布局的方式（线性布局   分块布局）
         // VK_IMAGE_TILING_LINEAR: 纹素基于行主序的布局，如pixels数组
         // VK_IMAGE_TILING_OPTIMAL: 纹素基于具体的实现来定义布局，以实现最佳访问
         // 与图像布局不同的是，tiling模式不能在之后修改。如果需要在内存图像中直接访问纹素，必须使用 VK_IMAGE_TILING_LINEAR 
