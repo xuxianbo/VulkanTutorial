@@ -658,6 +658,7 @@ private:
 
         // 是指当前类型的附近附件 在附件数值attachments中的第几个纹理 下标0开始
         // std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
+        // VkAttachmentReference 是指纹理的一个引用 
         VkAttachmentReference colorAttachmentRef{};
         colorAttachmentRef.attachment = 0;
         colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -678,8 +679,16 @@ private:
         // pResolveAttachments: 附件用于颜色附件的多重采样
         // pPreserveAttachments: 附件不被子通道使用，但是数据被保存
 
+
+
+        // 假如当前有3个subPass 那么在第一个subpass前会有一个隐藏的 subpass
+        // initSubpass -> subPass1 -> subPass2 -> subPass3
+        // VkSubpassDependency是 initSubpass 和 subPass1的一个关系
         VkSubpassDependency dependency{};
-        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+
+        // 首先就是VK_SUBPASS_EXTERNAL用于表示给定RenderPass之外的任何内容。
+        // 当用于srcSubpass时，它指定RenderPass之前发生的任何事情。当VK_SUBPASS_EXTERNAL用于dstSubpass时，它指定RenderPass之后发生的任何事情
+        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;   // 先做外部的subpass( subPass1 )
         dependency.dstSubpass = 0;
         dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
         dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
@@ -692,7 +701,7 @@ private:
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
         // 什么样的附近可以进入渲染流程
-        renderPassInfo.pAttachments = attachments.data();
+        renderPassInfo.pAttachments = attachments.data();        
         renderPassInfo.subpassCount = 1;
         // 一个渲染流程可以分为多个子流程
         renderPassInfo.pSubpasses = &subpass;
