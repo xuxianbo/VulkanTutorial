@@ -615,18 +615,37 @@ private:
         }
     }
 
+    // 指定真正的渲染流程时怎样的
+    // 举例： 什么样的东西会进入渲染管线
     void createRenderPass()
     {
+
+        //注意： 渲染流程只关心什么样类型的纹理附近可以进入，并不关心到底是谁
+        // 所以 format 必须要和SwapChain的format一致
+
+        // ==========颜色输出附件
         VkAttachmentDescription colorAttachment{};
         colorAttachment.format = swapChainImageFormat;
         colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        // VK_ATTACHMENT_LOAD_OP_LOAD: 保存已经存在于当前附件的内容
+        // VK_ATTACHMENT_LOAD_OP_CLEAR: 起始阶段以一个常量清理附件内容
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+
+        // VK_ATTACHMENT_STORE_OP_STORE: 渲染的内容会存储在内存，并在之后进行读取操作
+        // VK_ATTACHMENT_STORE_OP_DONT_CARE: 帧缓冲区的内容在渲染操作完毕后设置为undefined
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        // 进入时的布局
         colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        // 离开时的布局
+        // VK_IMAGE_LAYOUT_COLOR_ATTACHMET_OPTIMAL: 图像作为颜色附件
+        // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: 图像在交换链中被呈现
+        // VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: 图像作为目标，用于内存COPY操作
         colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+        // ==========深度Buffer附件
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = findDepthFormat();
         depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -637,6 +656,8 @@ private:
         depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+        // 是指当前类型的附近附件 在附件数值attachments中的第几个纹理 下标0开始
+        // std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
         VkAttachmentReference colorAttachmentRef{};
         colorAttachmentRef.attachment = 0;
         colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -646,10 +667,16 @@ private:
         depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         VkSubpassDescription subpass{};
-        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        // 作用到那个类型的渲染管线上
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;// 图像渲染管线
+        // 附件在数组中的索引直接从片段着色器引用，其layout(location = 0) out vec4 outColor
         subpass.colorAttachmentCount = 1;
         subpass.pColorAttachments = &colorAttachmentRef;
+        // 附件用于深度和模版数据
         subpass.pDepthStencilAttachment = &depthAttachmentRef;
+        // pInputAttachments: 附件从着色器中读取
+        // pResolveAttachments: 附件用于颜色附件的多重采样
+        // pPreserveAttachments: 附件不被子通道使用，但是数据被保存
 
         VkSubpassDependency dependency{};
         dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -659,13 +686,17 @@ private:
         dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
         dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
+        // 一个渲染流程只需要进一个颜色附件
         std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
         VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        // 什么样的附近可以进入渲染流程
         renderPassInfo.pAttachments = attachments.data();
         renderPassInfo.subpassCount = 1;
+        // 一个渲染流程可以分为多个子流程
         renderPassInfo.pSubpasses = &subpass;
+        // 各个子流程之后的关系是什么  那个子流程先执行  那个子流程后执行
         renderPassInfo.dependencyCount = 1;
         renderPassInfo.pDependencies = &dependency;
 
@@ -703,6 +734,7 @@ private:
         }
     }
 
+    // 渲染管线  是大体流程  什么东西被他操作
     void createGraphicsPipeline()
     {
         // 3. shader
@@ -865,6 +897,9 @@ private:
             framebufferInfo.height = swapChainExtent.height;
             framebufferInfo.layers = 1;
 
+            // 本质就是多个附近的组合
+            //      1.至少有一个颜色附件 Color Attachment（附件的本质就是一个图像）
+            //      2.模版和深度缓冲 Stencil&Depth  是在一个附件上   0+(0个和多个)
             if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS)
             {
                 throw std::runtime_error("failed to create framebuffer!");
@@ -1046,11 +1081,11 @@ private:
         imageInfo.mipLevels = 1;
         imageInfo.arrayLayers = 1;
         imageInfo.format = format; // Vulkan支持多种图像格式，但无论如何我们要在缓冲区中为纹素应用与像素一致的格式，否则拷贝操作会失败
-        
+
         // tiling 字段的设定 图像内侧布局的方式（线性布局   分块布局）
         // VK_IMAGE_TILING_LINEAR: 纹素基于行主序的布局，如pixels数组
         // VK_IMAGE_TILING_OPTIMAL: 纹素基于具体的实现来定义布局，以实现最佳访问
-        // 与图像布局不同的是，tiling模式不能在之后修改。如果需要在内存图像中直接访问纹素，必须使用 VK_IMAGE_TILING_LINEAR 
+        // 与图像布局不同的是，tiling模式不能在之后修改。如果需要在内存图像中直接访问纹素，必须使用 VK_IMAGE_TILING_LINEAR
         // 我们将会使用暂存缓冲区代替暂存图像，所以这部分不是很有必要。为了更有效的从shader中访问纹素，我们将会使用 VK_IMAGE_TILING_OPTIMAL
         imageInfo.tiling = tiling;
         // 对于图像的initialLayout字段，仅有两个可选的值：
