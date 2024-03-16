@@ -689,10 +689,15 @@ private:
         // 首先就是VK_SUBPASS_EXTERNAL用于表示给定RenderPass之外的任何内容。
         // 当用于srcSubpass时，它指定RenderPass之前发生的任何事情。当VK_SUBPASS_EXTERNAL用于dstSubpass时，它指定RenderPass之后发生的任何事情
         dependency.srcSubpass = VK_SUBPASS_EXTERNAL;   // 先做外部的subpass( subPass1 )
-        dependency.dstSubpass = 0;
+        dependency.dstSubpass = 0;  // 值为pSubpasses数值中的下标  0开始
+        
+        // 当前渲染过程走完之后 当前的图像应用到什么样的场景当中 (用到颜色附件上)
         dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        // 这个渲染通道 如何对Attachment（图像） 进行一个权限的操作（access） 比如是否能更改一个颜色
         dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        // 当前渲染过程走完之后 当前的图像应用到什么样的场景当中 (用到颜色附件上)
         dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        // 
         dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
         // 一个渲染流程只需要进一个颜色附件
@@ -811,7 +816,7 @@ private:
         multisampling.sampleShadingEnable = VK_FALSE;
         multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-        // 模板深度测试
+        // 6.模板深度测试
         VkPipelineDepthStencilStateCreateInfo depthStencil{};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         depthStencil.depthTestEnable = VK_TRUE;
@@ -820,7 +825,7 @@ private:
         depthStencil.depthBoundsTestEnable = VK_FALSE;
         depthStencil.stencilTestEnable = VK_FALSE;
 
-        // 透明度测试
+        // 7.透明度测试
         VkPipelineColorBlendAttachmentState colorBlendAttachment{};
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
         colorBlendAttachment.blendEnable = VK_FALSE;
@@ -849,6 +854,7 @@ private:
         pushConstantRange.size = sizeof(PushConstBlock);
         pushConstantRange.offset = 0;
 
+        // 8. layout
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
